@@ -18,3 +18,12 @@
     "vite": "^5.4.8"
   }
 }
+{
+  "name": "instagram-mvp-supabase",
+  "private": true,
+  "workspaces": ["frontend"],
+  "scripts": {
+    "dev": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build"
+  }
+}
