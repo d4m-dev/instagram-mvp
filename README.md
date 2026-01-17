@@ -83,10 +83,18 @@ Supabase Dashboard -> Project Settings -> API:
 
 ## 2) Chay local
 
+### 2.1 Tao file .env
+Tao file `.env` tai thu muc goc project:
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+### 2.2 Cai dat va chay
+
 ```bash
-cd frontend
-npm i
-# tao file .env (tham khao .env.example)
+npm install
 npm run dev
 ```
 
@@ -99,6 +107,5 @@ npm run dev
 3. Settings -> Secrets and variables -> Actions -> New repository secret:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_REPO_NAME` (ten repo, vd: instagram-mvp)
 
 Workflow se build Vite va deploy len Pages.

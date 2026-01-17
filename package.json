@@ -1,5 +1,5 @@
 {
-  "name": "instagram-mvp-frontend",
+  "name": "instagram-mvp",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -16,14 +16,5 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.8"
-  }
-}
-{
-  "name": "instagram-mvp-supabase",
-  "private": true,
-  "workspaces": ["frontend"],
-  "scripts": {
-    "dev": "npm --workspace frontend run dev",
-    "build": "npm --workspace frontend run build"
   }
 }
