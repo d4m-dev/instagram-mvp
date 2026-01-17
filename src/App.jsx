@@ -13,9 +13,21 @@ export default function App() {
   const [publicId, setPublicId] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [recentPosts, setRecentPosts] = useState([]);
+  const [profileUserId, setProfileUserId] = useState(null);
   const hasSupabase = !!supabase;
 
   const defaultAvatar = "https://raw.githubusercontent.com/d4m-dev/media/main/avatar/default-avatar.png";
+
+  function parseImagePaths(value) {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      // ignore
+    }
+    return [value];
+  }
 
   useEffect(() => {
     if (!hasSupabase) return;
@@ -63,10 +75,16 @@ export default function App() {
         .maybeSingle();
       if (error) {
         console.error(error);
+        const metaName = session?.user?.user_metadata?.display_name || "";
+        const metaUsername = session?.user?.user_metadata?.username || "";
+        setDisplayName(metaName);
+        setPublicId(metaUsername);
         return;
       }
-      const name = data?.display_name || "";
-      const uname = data?.username || "";
+      const metaName = session?.user?.user_metadata?.display_name || "";
+      const metaUsername = session?.user?.user_metadata?.username || "";
+      const name = data?.display_name || metaName || "";
+      const uname = data?.username || metaUsername || "";
       const avUrl = data?.avatar_url || "";
       setDisplayName(name);
       setPublicId(uname);
@@ -83,7 +101,8 @@ export default function App() {
         return;
       }
       const withUrls = (posts || []).map((p) => {
-        const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(p.image_path);
+        const paths = parseImagePaths(p.image_path);
+        const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(paths[0]);
         return { ...p, imageUrl: urlData.publicUrl };
       });
       setRecentPosts(withUrls);
@@ -104,6 +123,11 @@ export default function App() {
     );
   }
 
+  function openProfile(userId) {
+    setProfileUserId(userId || null);
+    setRoute("user");
+  }
+
   return (
     <>
       <div className="topbar">
@@ -119,8 +143,8 @@ export default function App() {
             {!isAuthed && route === "register" && <Register onAuthed={() => setRoute("feed")} onGoLogin={() => setRoute("login")} />}
 
             {isAuthed && route === "upload" && <Upload onDone={() => setRoute("feed")} />}
-            {isAuthed && route === "user" && <User />}
-            {isAuthed && route === "feed" && <Feed />}
+            {isAuthed && route === "user" && <User userId={profileUserId} />}
+            {isAuthed && route === "feed" && <Feed onOpenProfile={openProfile} />}
 
             {!isAuthed && route === "feed" && (
               <div className="card auth-redirect">
@@ -159,7 +183,7 @@ export default function App() {
               <div className="spacer" />
               <div className="row" style={{ justifyContent: "space-between" }}>
                 <span className="muted">Mở trang cá nhân</span>
-                <button className="btn-text" onClick={() => setRoute("user")}>Xem</button>
+                <button className="btn-text" onClick={() => openProfile(null)}>Xem</button>
               </div>
             </aside>
           )}
@@ -186,7 +210,7 @@ export default function App() {
               <path d="M20 20l-3.5-3.5" />
             </svg>
           </button>
-          <button className={`nav-btn ${route === "user" ? "active" : ""}`} onClick={() => setRoute("user")} aria-label="Hồ sơ">
+          <button className={`nav-btn ${route === "user" ? "active" : ""}`} onClick={() => openProfile(null)} aria-label="Hồ sơ">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c1.8-3.6 5-6 8-6s6.2 2.4 8 6" />

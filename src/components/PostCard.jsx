@@ -8,11 +8,12 @@ function shortId(id) {
   return id.slice(0, 6);
 }
 
-export default function PostCard({ post, onChanged, nameById, uid }) {
+export default function PostCard({ post, onChanged, nameById, uid, onOpenProfile }) {
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionErr, setActionErr] = useState("");
   const [isImageOpen, setIsImageOpen] = useState(false);
+  const [activeImageUrl, setActiveImageUrl] = useState("");
 
   function displayNameFor(userId) {
     const info = nameById?.get?.(userId);
@@ -26,11 +27,39 @@ export default function PostCard({ post, onChanged, nameById, uid }) {
     return info?.avatar_url || DEFAULT_AVATAR_URL;
   }
 
+  function openProfile(userId) {
+    onOpenProfile?.(userId);
+  }
+
   const createdLabel = useMemo(() => {
     try { return new Date(post.created_at).toLocaleString(); } catch { return ""; }
   }, [post.created_at]);
 
   const isOwner = uid && post.user_id === uid;
+
+  const imageUrls = post.imageUrls && post.imageUrls.length ? post.imageUrls : (post.imageUrl ? [post.imageUrl] : []);
+
+  function openImage(url) {
+    setActiveImageUrl(url || "");
+    setIsImageOpen(true);
+  }
+
+  function renderMedia(className) {
+    if (imageUrls.length <= 1) {
+      return (
+        <img className={`post-img clickable ${className}`} src={imageUrls[0]} alt="post" onClick={() => openImage(imageUrls[0])} />
+      );
+    }
+    return (
+      <div className={`post-media-grid ${className} count-${Math.min(imageUrls.length, 5)}`}>
+        {imageUrls.slice(0, 5).map((url, idx) => (
+          <button key={`${url}-${idx}`} className="media-cell" onClick={() => openImage(url)} aria-label="Xem ảnh">
+            <img src={url} alt={`post-${idx}`} />
+          </button>
+        ))}
+      </div>
+    );
+  }
 
 
   async function toggleLike() {
@@ -122,18 +151,22 @@ export default function PostCard({ post, onChanged, nameById, uid }) {
     <div className="card post-card">
       <div className="post-header">
         <div className="post-header-left">
-          <div className="avatar">
-            <img className="avatar-img" src={avatarFor(post.user_id)} alt="avatar" />
-          </div>
+          <button className="avatar-btn" onClick={() => openProfile(post.user_id)} aria-label="Xem hồ sơ">
+            <div className="avatar">
+              <img className="avatar-img" src={avatarFor(post.user_id)} alt="avatar" />
+            </div>
+          </button>
           <div>
-            <strong>{displayNameFor(post.user_id)}</strong>
+            <button className="link-btn" onClick={() => openProfile(post.user_id)}>
+              <strong>{displayNameFor(post.user_id)}</strong>
+            </button>
             <div className="muted small">{createdLabel}</div>
           </div>
         </div>
         <span className="pill">⋯</span>
       </div>
 
-      <img className="post-img clickable" src={post.imageUrl} alt="post" onClick={() => setIsImageOpen(true)} />
+      {renderMedia("")}
 
       <div className="post-actions">
         <div className="post-actions-bar">
@@ -156,7 +189,12 @@ export default function PostCard({ post, onChanged, nameById, uid }) {
 
       <div className="card-pad">
         {post.caption && (
-          <div className="small"><span className="muted">{displayNameFor(post.user_id)}</span> {post.caption}</div>
+          <div className="small">
+            <button className="link-btn muted" onClick={() => openProfile(post.user_id)}>
+              {displayNameFor(post.user_id)}
+            </button>
+            {" "}{post.caption}
+          </div>
         )}
 
         <div className="spacer" />
@@ -177,11 +215,16 @@ export default function PostCard({ post, onChanged, nameById, uid }) {
         <div className="grid">
           {(post.comments || []).map((c) => (
             <div key={c.id} className="comment-item">
-              <div className="comment-avatar">
-                <img className="avatar-img" src={avatarFor(c.user_id)} alt="avatar" />
-              </div>
+              <button className="avatar-btn" onClick={() => openProfile(c.user_id)} aria-label="Xem hồ sơ">
+                <div className="comment-avatar">
+                  <img className="avatar-img" src={avatarFor(c.user_id)} alt="avatar" />
+                </div>
+              </button>
               <div className="small">
-                <strong>{displayNameFor(c.user_id)}</strong> <span className="muted">{c.text}</span>
+                <button className="link-btn" onClick={() => openProfile(c.user_id)}>
+                  <strong>{displayNameFor(c.user_id)}</strong>
+                </button>
+                <span className="muted"> {c.text}</span>
               </div>
             </div>
           ))}
@@ -199,21 +242,28 @@ export default function PostCard({ post, onChanged, nameById, uid }) {
             <div className="modal-body">
               <div className="modal-info">
                 <div className="row">
-                  <div className="avatar">
-                    <img className="avatar-img" src={avatarFor(post.user_id)} alt="avatar" />
-                  </div>
+                  <button className="avatar-btn" onClick={() => openProfile(post.user_id)} aria-label="Xem hồ sơ">
+                    <div className="avatar">
+                      <img className="avatar-img" src={avatarFor(post.user_id)} alt="avatar" />
+                    </div>
+                  </button>
                   <div>
-                    <div style={{ fontWeight: 600 }}>{displayNameFor(post.user_id)}</div>
+                    <button className="link-btn" onClick={() => openProfile(post.user_id)}>
+                      <div style={{ fontWeight: 600 }}>{displayNameFor(post.user_id)}</div>
+                    </button>
                     <div className="muted small">{createdLabel}</div>
                   </div>
                 </div>
                 {post.caption && (
                   <div className="small" style={{ marginTop: 8 }}>
-                    <span className="muted">{displayNameFor(post.user_id)}</span> {post.caption}
+                    <button className="link-btn muted" onClick={() => openProfile(post.user_id)}>
+                      {displayNameFor(post.user_id)}
+                    </button>
+                    {" "}{post.caption}
                   </div>
                 )}
               </div>
-              <img className="modal-image" src={post.imageUrl} alt="post" />
+              <img className="modal-image" src={activeImageUrl || imageUrls[0]} alt="post" />
             </div>
           </div>
         </div>

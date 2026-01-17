@@ -47,7 +47,11 @@ export default function Register({ onAuthed, onGoLogin }) {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({ email: mail, password });
+      const { data, error } = await supabase.auth.signUp({
+        email: mail,
+        password,
+        options: { data: { display_name: name, username: uname } }
+      });
       if (error) throw error;
       const uid = data.user?.id;
       if (uid) {

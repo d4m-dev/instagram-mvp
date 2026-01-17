@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../supabase.js";
 
 export default function Upload({ onDone }) {
-  const [file, setFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [processedBlob, setProcessedBlob] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [processedBlobs, setProcessedBlobs] = useState([]);
   const [quality, setQuality] = useState(0.8);
   const [caption, setCaption] = useState("");
   const [err, setErr] = useState("");
@@ -12,19 +12,19 @@ export default function Upload({ onDone }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let revokedUrl = null;
-    if (!file) {
-      setPreviewUrl("");
-      setProcessedBlob(null);
+    let revoked = [];
+    if (!files.length) {
+      setPreviews([]);
+      setProcessedBlobs([]);
       return;
     }
 
     (async () => {
       try {
-        const { blob, preview } = await processImage(file, quality);
-        setProcessedBlob(blob);
-        setPreviewUrl(preview);
-        revokedUrl = preview;
+        const results = await Promise.all(files.map((f) => processImage(f, quality)));
+        setProcessedBlobs(results.map((r) => r.blob));
+        setPreviews(results.map((r) => r.preview));
+        revoked = results.map((r) => r.preview);
       } catch (e) {
         console.error(e);
         setErr("Không thể xử lý ảnh");
@@ -32,9 +32,9 @@ export default function Upload({ onDone }) {
     })();
 
     return () => {
-      if (revokedUrl) URL.revokeObjectURL(revokedUrl);
+      revoked.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [file, quality]);
+  }, [files, quality]);
 
   async function processImage(inputFile, q) {
     const imgUrl = URL.createObjectURL(inputFile);
@@ -89,8 +89,8 @@ export default function Upload({ onDone }) {
     e.preventDefault();
     setErr("");
     setOk("");
-    if (!file) { setErr("Chọn ảnh trước."); return; }
-    if (!processedBlob) { setErr("Ảnh chưa xử lý xong."); return; }
+    if (!files.length) { setErr("Chọn ảnh trước."); return; }
+    if (!processedBlobs.length || processedBlobs.length !== files.length) { setErr("Ảnh chưa xử lý xong."); return; }
     setLoading(true);
 
     try {
@@ -99,27 +99,31 @@ export default function Upload({ onDone }) {
       const user = userData.user;
       if (!user) throw new Error("Bạn chưa đăng nhập");
 
-      const fileName = `${crypto.randomUUID()}.jpg`;
-
-      const { error: upErr } = await supabase.storage.from("post-images").upload(fileName, processedBlob, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: "image/jpeg"
-      });
-      if (upErr) throw upErr;
+      const fileNames = await Promise.all(
+        processedBlobs.map(async (blob) => {
+          const fileName = `${crypto.randomUUID()}.jpg`;
+          const { error: upErr } = await supabase.storage.from("post-images").upload(fileName, blob, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: "image/jpeg"
+          });
+          if (upErr) throw upErr;
+          return fileName;
+        })
+      );
 
       const { error: insErr } = await supabase.from("posts").insert({
         user_id: user.id,
         caption,
-        image_path: fileName
+        image_path: JSON.stringify(fileNames)
       });
       if (insErr) throw insErr;
 
       setOk("Tải lên thành công!");
       setCaption("");
-      setFile(null);
-      setPreviewUrl("");
-      setProcessedBlob(null);
+      setFiles([]);
+      setPreviews([]);
+      setProcessedBlobs([]);
       setTimeout(() => onDone?.(), 600);
     } catch (e2) {
       setErr(e2?.message || "Tải lên thất bại");
@@ -132,12 +136,30 @@ export default function Upload({ onDone }) {
     <div className="card">
       <h2 className="page-title">Tạo bài viết</h2>
       <form className="grid" onSubmit={submit}>
-        <input className="input" type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        {previewUrl && (
-          <img className="post-img" src={previewUrl} alt="preview" />
+        <input
+          className="input"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => {
+            const list = Array.from(e.target.files || []).slice(0, 7);
+            if (list.length > 7) {
+              setErr("Tối đa 7 ảnh mỗi bài viết.");
+            }
+            setFiles(list);
+          }}
+        />
+        {previews.length > 0 && (
+          <div className={`post-media-grid upload-grid count-${Math.min(previews.length, 5)}`}>
+            {previews.slice(0, 5).map((url, idx) => (
+              <div key={url} className="media-cell">
+                <img src={url} alt={`preview-${idx}`} />
+              </div>
+            ))}
+          </div>
         )}
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <div className="muted">Ảnh sẽ được cắt 4:3 và nén</div>
+          <div className="muted">Ảnh sẽ được cắt 4:3 và nén (tối đa 7 ảnh)</div>
           <div className="row">
             <span className="muted">Chất lượng</span>
             <input

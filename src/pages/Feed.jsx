@@ -7,7 +7,18 @@ async function getPublicUrl(path) {
   return data.publicUrl;
 }
 
-export default function Feed() {
+function parseImagePaths(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+  } catch {
+    // ignore
+  }
+  return [value];
+}
+
+export default function Feed({ onOpenProfile }) {
   const [items, setItems] = useState([]); // merged posts
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
@@ -86,11 +97,14 @@ export default function Feed() {
 
       const merged = await Promise.all(
         (posts || []).map(async (p) => {
-          const imageUrl = await getPublicUrl(p.image_path);
+          const paths = parseImagePaths(p.image_path);
+          const imageUrls = await Promise.all(paths.map((path) => getPublicUrl(path)));
+          const imageUrl = imageUrls[0] || "";
           const likeUserIds = likeByPost.get(p.id) || [];
           return {
             ...p,
             imageUrl,
+            imageUrls,
             likesCount: likeUserIds.length,
             hasLiked: uid ? likeUserIds.includes(uid) : false,
             comments: commentsByPost.get(p.id) || []
@@ -122,7 +136,7 @@ export default function Feed() {
       {empty && <div className="card">Chưa có bài nào.</div>}
 
       {items.map((p) => (
-        <PostCard key={p.id} post={p} onChanged={load} nameById={nameById} uid={uid} />
+        <PostCard key={p.id} post={p} onChanged={load} nameById={nameById} uid={uid} onOpenProfile={onOpenProfile} />
       ))}
     </div>
   );

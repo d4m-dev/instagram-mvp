@@ -7,12 +7,26 @@ function getPublicUrl(bucket, path) {
   return data.publicUrl || "";
 }
 
+function parseImagePaths(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+  } catch {
+    // ignore
+  }
+  return [value];
+}
+
 const DEFAULT_AVATAR_URL = "https://raw.githubusercontent.com/d4m-dev/media/main/avatar/default-avatar.png";
 
-export default function User() {
+export default function User({ userId }) {
   const [displayName, setDisplayName] = useState("");
   const [publicId, setPublicId] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarImage, setAvatarImage] = useState(null);
   const [cropZoom, setCropZoom] = useState(1.2);
@@ -34,11 +48,16 @@ export default function User() {
   const [previewPostId, setPreviewPostId] = useState(null);
   const [previewCaption, setPreviewCaption] = useState("");
   const [savingPost, setSavingPost] = useState(false);
+  const [previewImages, setPreviewImages] = useState([]);
 
   async function logout() {
     await supabase.auth.signOut();
     window.location.reload();
   }
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -50,15 +69,20 @@ export default function User() {
         const uid = userData.user?.id;
         if (!uid) throw new Error("Bạn chưa đăng nhập");
 
+        const viewingId = userId || uid;
+        const isOwner = viewingId === uid;
+
         const { data, error } = await supabase
           .from("profiles")
           .select("display_name,username,avatar_url")
-          .eq("user_id", uid)
+          .eq("user_id", viewingId)
           .maybeSingle();
         if (error) throw error;
 
-        const name = data?.display_name || "";
-        const uname = data?.username || "";
+        const metaName = isOwner ? (userData.user?.user_metadata?.display_name || "") : "";
+        const metaUsername = isOwner ? (userData.user?.user_metadata?.username || "") : "";
+        const name = data?.display_name || metaName || "";
+        const uname = data?.username || metaUsername || "";
         const profileAvatarUrl = data?.avatar_url || "";
         setDisplayName(name);
         setPublicId(uname);
@@ -66,18 +90,24 @@ export default function User() {
 
         const { data: posts, error: pe } = await supabase
           .from("posts")
-          .select("id,image_path,created_at")
-          .eq("user_id", uid)
+          .select("id,image_path,created_at,caption")
+          .eq("user_id", viewingId)
           .order("created_at", { ascending: false })
           .limit(60);
         if (pe) throw pe;
 
         const postIds = (posts || []).map((p) => p.id);
         const withUrls = await Promise.all(
-          (posts || []).map(async (p) => ({
-            ...p,
-            imageUrl: getPublicUrl("post-images", p.image_path)
-          }))
+          (posts || []).map(async (p) => {
+            const paths = parseImagePaths(p.image_path);
+            const imageUrls = await Promise.all(paths.map((path) => getPublicUrl("post-images", path)));
+            return {
+              ...p,
+              imageUrls,
+              imageUrl: imageUrls[0] || "",
+              image_paths: paths
+            };
+          })
         );
 
         let totalLikes = 0;
@@ -95,17 +125,29 @@ export default function User() {
           const { count: f1, error: fe1 } = await supabase
             .from("follows")
             .select("id", { count: "exact", head: true })
-            .eq("following_id", uid);
+            .eq("following_id", viewingId);
           if (!fe1 && typeof f1 === "number") followers = f1;
 
           const { count: f2, error: fe2 } = await supabase
             .from("follows")
             .select("id", { count: "exact", head: true })
-            .eq("follower_id", uid);
+            .eq("follower_id", viewingId);
           if (!fe2 && typeof f2 === "number") following = f2;
         } catch {
           followers = 0;
           following = 0;
+        }
+
+        if (!isOwner) {
+          const { data: rel, error: re } = await supabase
+            .from("follows")
+            .select("id")
+            .eq("follower_id", uid)
+            .eq("following_id", viewingId)
+            .maybeSingle();
+          if (!re) setIsFollowing(!!rel);
+        } else {
+          setIsFollowing(false);
         }
 
         setItems(withUrls);
@@ -116,7 +158,9 @@ export default function User() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [userId]);
+
+  const isOwner = currentUserId && (userId ? currentUserId === userId : true);
 
   useEffect(() => {
     if (!avatarFile) {
@@ -203,8 +247,10 @@ export default function User() {
     if (postId) {
       const post = items.find((p) => p.id === postId);
       setPreviewCaption(post?.caption || "");
+      setPreviewImages([url]);
     } else {
       setPreviewCaption("");
+      setPreviewImages([url]);
     }
   }
 
@@ -212,6 +258,36 @@ export default function User() {
     setPreviewImage("");
     setPreviewPostId(null);
     setPreviewCaption("");
+    setPreviewImages([]);
+  }
+
+  async function toggleFollow() {
+    if (!currentUserId || !userId) return;
+    setFollowLoading(true);
+    setErr("");
+    try {
+      if (isFollowing) {
+        const { error } = await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUserId)
+          .eq("following_id", userId);
+        if (error) throw error;
+        setIsFollowing(false);
+        setStats((prev) => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
+      } else {
+        const { error } = await supabase
+          .from("follows")
+          .insert({ follower_id: currentUserId, following_id: userId });
+        if (error) throw error;
+        setIsFollowing(true);
+        setStats((prev) => ({ ...prev, followers: prev.followers + 1 }));
+      }
+    } catch (e) {
+      setErr(e?.message || "Thao tác thất bại");
+    } finally {
+      setFollowLoading(false);
+    }
   }
 
   async function savePostCaption() {
@@ -256,9 +332,9 @@ export default function User() {
         .eq("user_id", uid);
       if (error) throw error;
 
-      if (post?.image_path) {
+      if (post?.image_paths?.length) {
         try {
-          await supabase.storage.from("post-images").remove([post.image_path]);
+          await supabase.storage.from("post-images").remove(post.image_paths);
         } catch {
           // ignore storage errors
         }
@@ -420,14 +496,20 @@ export default function User() {
     <div className="card">
       <div className="profile-topbar">
         <h2 className="page-title">Hồ sơ</h2>
-        <button className="icon-btn" onClick={logout} aria-label="Đăng xuất">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M10 17l-1 4h-4V3h4l1 4" />
-            <path d="M15 12H7" />
-            <path d="M15 12l-3-3" />
-            <path d="M15 12l-3 3" />
-          </svg>
-        </button>
+        {isOwner ? (
+          <button className="icon-btn" onClick={logout} aria-label="Đăng xuất">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 17l-1 4h-4V3h4l1 4" />
+              <path d="M15 12H7" />
+              <path d="M15 12l-3-3" />
+              <path d="M15 12l-3 3" />
+            </svg>
+          </button>
+        ) : (
+          <button className="btn2" onClick={toggleFollow} disabled={followLoading}>
+            {isFollowing ? "Đang theo dõi" : "Theo dõi"}
+          </button>
+        )}
       </div>
       {loading ? (
         <div className="muted">Đang tải...</div>
@@ -452,31 +534,37 @@ export default function User() {
                 <div className="stat"><strong>{stats.followers}</strong><span className="muted">Followers</span></div>
                 <div className="stat"><strong>{stats.following}</strong><span className="muted">Following</span></div>
               </div>
-              <div className="profile-actions">
-                <label className="btn2">
-                  Chọn ảnh đại diện
-                  <input type="file" accept="image/*" hidden onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
-                </label>
-                <button className="btn" onClick={uploadAvatar} disabled={uploading || !avatarImage}>
-                  {uploading ? "..." : "Lưu ảnh đại diện"}
-                </button>
-              </div>
+              {isOwner && (
+                <div className="profile-actions">
+                  <label className="btn2">
+                    Chọn ảnh đại diện
+                    <input type="file" accept="image/*" hidden onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
+                  </label>
+                  <button className="btn" onClick={uploadAvatar} disabled={uploading || !avatarImage}>
+                    {uploading ? "..." : "Lưu ảnh đại diện"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div>
-            <div className="muted" style={{ marginBottom: 6 }}>Tên hiển thị</div>
-            <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Nhập tên hiển thị" />
-          </div>
-          <div>
-            <div className="muted" style={{ marginBottom: 6 }}>Mã người dùng (public id)</div>
-            <input className="input" value={publicId} onChange={(e) => setPublicId(e.target.value)} placeholder="vd: nguyenvana" />
-          </div>
-          {err && <div style={{ color: "#ff7b7b" }}>{err}</div>}
-          {ok && <div style={{ color: "#16a34a" }}>{ok}</div>}
-          <button className="btn" onClick={save} disabled={saving}>{saving ? "..." : "Lưu"}</button>
+          {isOwner && (
+            <>
+              <div>
+                <div className="muted" style={{ marginBottom: 6 }}>Tên hiển thị</div>
+                <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Nhập tên hiển thị" />
+              </div>
+              <div>
+                <div className="muted" style={{ marginBottom: 6 }}>Mã người dùng (public id)</div>
+                <input className="input" value={publicId} onChange={(e) => setPublicId(e.target.value)} placeholder="vd: nguyenvana" />
+              </div>
+              {err && <div style={{ color: "#ff7b7b" }}>{err}</div>}
+              {ok && <div style={{ color: "#16a34a" }}>{ok}</div>}
+              <button className="btn" onClick={save} disabled={saving}>{saving ? "..." : "Lưu"}</button>
+            </>
+          )}
 
-          <div className="section-title">Bài viết của bạn</div>
+          <div className="section-title">Bài viết</div>
           {items.length === 0 ? (
             <div className="muted">Chưa có bài viết nào.</div>
           ) : (
@@ -505,10 +593,18 @@ export default function User() {
                 <div style={{ fontWeight: 600 }}>{displayName || "Tài khoản"}</div>
                 <div className="muted small">{publicId ? `@${publicId}` : "Chưa đặt mã người dùng"}</div>
               </div>
-              <div className="modal-media">
-                <img className="modal-image" src={previewImage} alt="preview" />
+              <div className={`modal-media ${previewImages.length > 1 ? `post-media-grid count-${Math.min(previewImages.length, 5)}` : ""}`}>
+                {previewImages.length > 1 ? (
+                  previewImages.slice(0, 5).map((url, idx) => (
+                    <div key={`${url}-${idx}`} className="media-cell">
+                      <img src={url} alt={`preview-${idx}`} />
+                    </div>
+                  ))
+                ) : (
+                  <img className="modal-image" src={previewImage} alt="preview" />
+                )}
               </div>
-              {previewPostId && (
+              {previewPostId && isOwner && (
                 <div className="grid" style={{ width: "100%" }}>
                   <div className="muted">Chỉnh sửa chú thích</div>
                   <textarea
@@ -522,7 +618,7 @@ export default function User() {
             </div>
             <div className="modal-actions">
               <button className="btn2" onClick={closePreview}>Đóng</button>
-              {previewPostId && (
+              {previewPostId && isOwner && (
                 <>
                   <button className="btn" onClick={savePostCaption} disabled={savingPost}>Lưu</button>
                   <button className="btn danger-btn" onClick={() => deletePostById(previewPostId)}>Xóa bài viết</button>
