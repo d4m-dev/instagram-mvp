@@ -24,7 +24,7 @@ export default function Login({ onAuthed, onGoRegister }) {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Đăng nhập</h2>
+      <h2 className="page-title">Đăng nhập</h2>
       <form className="grid" onSubmit={submit}>
         <input className="input" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input className="input" placeholder="mật khẩu" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -32,7 +32,7 @@ export default function Login({ onAuthed, onGoRegister }) {
         <button className="btn" disabled={loading}>{loading ? "..." : "Đăng nhập"}</button>
       </form>
       <div className="spacer" />
-      <button className="btn2" onClick={onGoRegister}>Chưa có tài khoản? Đăng ký</button>
+      <button className="btn-text" onClick={onGoRegister}>Chưa có tài khoản? Đăng ký</button>
     </div>
   );
 }

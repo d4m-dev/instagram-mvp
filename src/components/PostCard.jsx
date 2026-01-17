@@ -1,14 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase.js";
+
+const DEFAULT_AVATAR_URL = "https://raw.githubusercontent.com/d4m-dev/media/main/avatar/default-avatar.png";
 
 function shortId(id) {
   if (!id) return "";
   return id.slice(0, 6);
 }
 
-export default function PostCard({ post, onChanged, nameById }) {
+export default function PostCard({ post, onChanged, nameById, uid }) {
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+  const [actionErr, setActionErr] = useState("");
+  const [isImageOpen, setIsImageOpen] = useState(false);
 
   function displayNameFor(userId) {
     const info = nameById?.get?.(userId);
@@ -17,28 +21,36 @@ export default function PostCard({ post, onChanged, nameById }) {
     return `user-${shortId(userId)}`;
   }
 
+  function avatarFor(userId) {
+    const info = nameById?.get?.(userId);
+    return info?.avatar_url || DEFAULT_AVATAR_URL;
+  }
+
   const createdLabel = useMemo(() => {
     try { return new Date(post.created_at).toLocaleString(); } catch { return ""; }
   }, [post.created_at]);
+
+  const isOwner = uid && post.user_id === uid;
+
 
   async function toggleLike() {
     setBusy(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid) throw new Error("Bạn chưa đăng nhập");
+      const currentId = userData.user?.id;
+      if (!currentId) throw new Error("Bạn chưa đăng nhập");
 
       if (post.hasLiked) {
         const { error } = await supabase
           .from("likes")
           .delete()
           .eq("post_id", post.id)
-          .eq("user_id", uid);
+          .eq("user_id", currentId);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("likes")
-          .insert({ post_id: post.id, user_id: uid });
+          .insert({ post_id: post.id, user_id: currentId });
         if (error) throw error;
       }
 
@@ -56,12 +68,12 @@ export default function PostCard({ post, onChanged, nameById }) {
     setBusy(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid) throw new Error("Bạn chưa đăng nhập");
+      const currentId = userData.user?.id;
+      if (!currentId) throw new Error("Bạn chưa đăng nhập");
 
       const { error } = await supabase.from("comments").insert({
         post_id: post.id,
-        user_id: uid,
+        user_id: currentId,
         text: comment.trim()
       });
       if (error) throw error;
@@ -75,48 +87,137 @@ export default function PostCard({ post, onChanged, nameById }) {
     }
   }
 
+  async function deletePost() {
+    if (!window.confirm("Xóa bài viết này?")) return;
+    setActionErr("");
+    setBusy(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const currentId = userData.user?.id;
+      if (!currentId) throw new Error("Bạn chưa đăng nhập");
+      if (currentId !== post.user_id) throw new Error("Bạn không có quyền xóa bài này");
+
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", post.id)
+        .eq("user_id", currentId);
+      if (error) throw error;
+
+      try {
+        await supabase.storage.from("post-images").remove([post.image_path]);
+      } catch {
+        // ignore storage errors
+      }
+
+      await onChanged?.();
+    } catch (e) {
+      setActionErr(e?.message || "Xóa bài viết thất bại");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="card">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <div>
-          <strong>{displayNameFor(post.user_id)}</strong>
-          <div className="muted small">{createdLabel}</div>
-        </div>
-        <button className="btn2" onClick={toggleLike} disabled={busy}>
-          {post.hasLiked ? "💙" : "🤍"} Thích ({post.likesCount})
-        </button>
-      </div>
-
-      <div className="spacer" />
-      <img className="post-img" src={post.imageUrl} alt="post" />
-
-      <div className="spacer" />
-      {post.caption && (
-        <div className="small"><span className="muted">{displayNameFor(post.user_id)}</span> {post.caption}</div>
-      )}
-
-      <div className="spacer" />
-      <div className="muted">Bình luận</div>
-      <div className="spacer" />
-
-      <form className="row" onSubmit={addComment}>
-        <input
-          className="input"
-          placeholder="Viết bình luận..."
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-        <button className="btn" disabled={busy}>Gửi</button>
-      </form>
-
-      <div className="spacer" />
-      <div className="grid">
-        {(post.comments || []).map((c) => (
-          <div key={c.id} className="small">
-            <strong>{displayNameFor(c.user_id)}</strong> <span className="muted">{c.text}</span>
+    <div className="card post-card">
+      <div className="post-header">
+        <div className="post-header-left">
+          <div className="avatar">
+            <img className="avatar-img" src={avatarFor(post.user_id)} alt="avatar" />
           </div>
-        ))}
+          <div>
+            <strong>{displayNameFor(post.user_id)}</strong>
+            <div className="muted small">{createdLabel}</div>
+          </div>
+        </div>
+        <span className="pill">⋯</span>
       </div>
+
+      <img className="post-img clickable" src={post.imageUrl} alt="post" onClick={() => setIsImageOpen(true)} />
+
+      <div className="post-actions">
+        <div className="post-actions-bar">
+          <button className={`icon-pill ${post.hasLiked ? "active" : ""}`} onClick={toggleLike} disabled={busy} aria-label="Thích">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21s-7-4.35-9.33-8.1C.42 9.54 2.28 5.5 6 5.5c2.01 0 3.35 1.03 4 2 0.65-0.97 1.99-2 4-2 3.72 0 5.58 4.04 3.33 7.4C19 16.65 12 21 12 21z" />
+            </svg>
+            <span>{post.likesCount}</span>
+          </button>
+          <div className="icon-pill muted">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-4.22-7.58" />
+              <path d="M21 12v7l-4-2" />
+            </svg>
+            <span>{(post.comments || []).length}</span>
+          </div>
+        </div>
+        {actionErr && <div className="muted small" style={{ color: "#ff7b7b" }}>{actionErr}</div>}
+      </div>
+
+      <div className="card-pad">
+        {post.caption && (
+          <div className="small"><span className="muted">{displayNameFor(post.user_id)}</span> {post.caption}</div>
+        )}
+
+        <div className="spacer" />
+        <div className="muted">Bình luận</div>
+        <div className="spacer" />
+
+        <form className="row" onSubmit={addComment}>
+          <input
+            className="input"
+            placeholder="Viết bình luận..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <button className="btn" disabled={busy}>Gửi</button>
+        </form>
+
+        <div className="spacer" />
+        <div className="grid">
+          {(post.comments || []).map((c) => (
+            <div key={c.id} className="comment-item">
+              <div className="comment-avatar">
+                <img className="avatar-img" src={avatarFor(c.user_id)} alt="avatar" />
+              </div>
+              <div className="small">
+                <strong>{displayNameFor(c.user_id)}</strong> <span className="muted">{c.text}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {isImageOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">Bài viết</div>
+              <button className="icon-btn" onClick={() => setIsImageOpen(false)} aria-label="Đóng">
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-info">
+                <div className="row">
+                  <div className="avatar">
+                    <img className="avatar-img" src={avatarFor(post.user_id)} alt="avatar" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{displayNameFor(post.user_id)}</div>
+                    <div className="muted small">{createdLabel}</div>
+                  </div>
+                </div>
+                {post.caption && (
+                  <div className="small" style={{ marginTop: 8 }}>
+                    <span className="muted">{displayNameFor(post.user_id)}</span> {post.caption}
+                  </div>
+                )}
+              </div>
+              <img className="modal-image" src={post.imageUrl} alt="post" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

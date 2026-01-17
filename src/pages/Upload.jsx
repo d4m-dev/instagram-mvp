@@ -130,7 +130,7 @@ export default function Upload({ onDone }) {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Tạo bài viết</h2>
+      <h2 className="page-title">Tạo bài viết</h2>
       <form className="grid" onSubmit={submit}>
         <input className="input" type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
         {previewUrl && (

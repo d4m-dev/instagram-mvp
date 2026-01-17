@@ -70,14 +70,15 @@ export default function Feed() {
       if (userIds.length) {
         const { data: profiles, error: e4 } = await supabase
           .from("profiles")
-          .select("user_id,display_name,username")
+          .select("user_id,display_name,username,avatar_url")
           .in("user_id", userIds);
         if (e4) throw e4;
         for (const p of profiles || []) {
-          if (p.display_name || p.username) {
+          if (p.display_name || p.username || p.avatar_url) {
             displayNameMap.set(p.user_id, {
               display_name: p.display_name || "",
-              username: p.username || ""
+              username: p.username || "",
+              avatar_url: p.avatar_url || ""
             });
           }
         }
@@ -113,7 +114,7 @@ export default function Feed() {
   return (
     <div className="grid">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>Bảng tin</h2>
+        <h2 className="page-title">Bảng tin</h2>
         <button className="btn2" onClick={load} disabled={loading}>{loading ? "..." : "Làm mới"}</button>
       </div>
 
@@ -121,7 +122,7 @@ export default function Feed() {
       {empty && <div className="card">Chưa có bài nào.</div>}
 
       {items.map((p) => (
-        <PostCard key={p.id} post={p} onChanged={load} nameById={nameById} />
+        <PostCard key={p.id} post={p} onChanged={load} nameById={nameById} uid={uid} />
       ))}
     </div>
   );

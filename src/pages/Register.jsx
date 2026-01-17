@@ -70,7 +70,7 @@ export default function Register({ onAuthed, onGoLogin }) {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Đăng ký</h2>
+      <h2 className="page-title">Đăng ký</h2>
       <form className="grid" onSubmit={submit}>
         <input className="input" placeholder="Họ và tên" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         <input className="input" placeholder="Mã người dùng (vd: nguyenvana)" value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -82,7 +82,7 @@ export default function Register({ onAuthed, onGoLogin }) {
         <button className="btn" disabled={loading}>{loading ? "..." : "Tạo tài khoản"}</button>
       </form>
       <div className="spacer" />
-      <button className="btn2" onClick={onGoLogin}>Đã có tài khoản? Đăng nhập</button>
+      <button className="btn-text" onClick={onGoLogin}>Đã có tài khoản? Đăng nhập</button>
     </div>
   );
 }
