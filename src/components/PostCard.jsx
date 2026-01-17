@@ -19,7 +19,7 @@ export default function PostCard({ post, onChanged }) {
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
-      if (!uid) throw new Error("Not authenticated");
+      if (!uid) throw new Error("Bạn chưa đăng nhập");
 
       if (post.hasLiked) {
         const { error } = await supabase
@@ -50,7 +50,7 @@ export default function PostCard({ post, onChanged }) {
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
-      if (!uid) throw new Error("Not authenticated");
+      if (!uid) throw new Error("Bạn chưa đăng nhập");
 
       const { error } = await supabase.from("comments").insert({
         post_id: post.id,
@@ -76,7 +76,7 @@ export default function PostCard({ post, onChanged }) {
           <div className="muted small">{createdLabel}</div>
         </div>
         <button className="btn2" onClick={toggleLike} disabled={busy}>
-          {post.hasLiked ? "💙" : "🤍"} Like ({post.likesCount})
+          {post.hasLiked ? "💙" : "🤍"} Thích ({post.likesCount})
         </button>
       </div>
 
@@ -89,17 +89,17 @@ export default function PostCard({ post, onChanged }) {
       )}
 
       <div className="spacer" />
-      <div className="muted">Comments</div>
+      <div className="muted">Bình luận</div>
       <div className="spacer" />
 
       <form className="row" onSubmit={addComment}>
         <input
           className="input"
-          placeholder="Comment..."
+          placeholder="Viết bình luận..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
-        <button className="btn" disabled={busy}>Send</button>
+        <button className="btn" disabled={busy}>Gửi</button>
       </form>
 
       <div className="spacer" />

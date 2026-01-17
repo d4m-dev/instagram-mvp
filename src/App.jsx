@@ -41,13 +41,13 @@ export default function App() {
             {isAuthed ? (
               <>
                 <span className="muted">{userEmail}</span>
-                <button className="btn2" onClick={() => setRoute("upload")}>Upload</button>
-                <button className="btn2" onClick={logout}>Logout</button>
+                <button className="btn2" onClick={() => setRoute("upload")}>Tải lên</button>
+                <button className="btn2" onClick={logout}>Đăng xuất</button>
               </>
             ) : (
               <>
-                <button className="btn2" onClick={() => setRoute("login")}>Login</button>
-                <button className="btn2" onClick={() => setRoute("register")}>Register</button>
+                <button className="btn2" onClick={() => setRoute("login")}>Đăng nhập</button>
+                <button className="btn2" onClick={() => setRoute("register")}>Đăng ký</button>
               </>
             )}
           </div>
@@ -63,9 +63,9 @@ export default function App() {
 
         {!isAuthed && route === "feed" && (
           <div className="card">
-            <div>Ban chua dang nhap.</div>
+            <div>Bạn chưa đăng nhập.</div>
             <div className="spacer" />
-            <button className="btn" onClick={() => setRoute("login")}>Di toi Login</button>
+            <button className="btn" onClick={() => setRoute("login")}>Đi tới đăng nhập</button>
           </div>
         )}
       </div>

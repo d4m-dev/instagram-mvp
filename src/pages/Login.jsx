@@ -16,7 +16,7 @@ export default function Login({ onAuthed, onGoRegister }) {
       if (error) throw error;
       onAuthed?.();
     } catch (e2) {
-      setErr(e2?.message || "Login failed");
+      setErr(e2?.message || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }
@@ -24,15 +24,15 @@ export default function Login({ onAuthed, onGoRegister }) {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Login</h2>
+      <h2 style={{ marginTop: 0 }}>Đăng nhập</h2>
       <form className="grid" onSubmit={submit}>
         <input className="input" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="input" placeholder="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input className="input" placeholder="mật khẩu" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         {err && <div style={{ color: "#ff7b7b" }}>{err}</div>}
-        <button className="btn" disabled={loading}>{loading ? "..." : "Login"}</button>
+        <button className="btn" disabled={loading}>{loading ? "..." : "Đăng nhập"}</button>
       </form>
       <div className="spacer" />
-      <button className="btn2" onClick={onGoRegister}>Chua co tai khoan? Register</button>
+      <button className="btn2" onClick={onGoRegister}>Chưa có tài khoản? Đăng ký</button>
     </div>
   );
 }

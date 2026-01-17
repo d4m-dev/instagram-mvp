@@ -76,7 +76,7 @@ export default function Feed() {
 
       setItems(merged);
     } catch (e) {
-      setErr(e?.message || "Load feed failed");
+      setErr(e?.message || "Tải bảng tin thất bại");
     } finally {
       setLoading(false);
     }
@@ -89,12 +89,12 @@ export default function Feed() {
   return (
     <div className="grid">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>Feed</h2>
-        <button className="btn2" onClick={load} disabled={loading}>{loading ? "..." : "Refresh"}</button>
+        <h2 style={{ margin: 0 }}>Bảng tin</h2>
+        <button className="btn2" onClick={load} disabled={loading}>{loading ? "..." : "Làm mới"}</button>
       </div>
 
       {err && <div className="card" style={{ borderColor: "#ff7b7b" }}>{err}</div>}
-      {empty && <div className="card">Chua co bai nao.</div>}
+      {empty && <div className="card">Chưa có bài nào.</div>}
 
       {items.map((p) => (
         <PostCard key={p.id} post={p} onChanged={load} />
