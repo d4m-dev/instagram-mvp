@@ -1,9 +1,8 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
 
-const repoName = process.env.VITE_REPO_NAME || "instagram-mvp";
-
-export default defineConfig(({ command }) => ({
+export default defineConfig({
   plugins: [react()],
-  base: command === "serve" ? "/" : `/${repoName}/`
-}));
+  // GitHub Pages của repo luôn là /<repo>/
+  base: "/instagram-mvp/",
+})
