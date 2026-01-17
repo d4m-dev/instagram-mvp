@@ -43,12 +43,22 @@ create table if not exists public.comments (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  username text not null,
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists profiles_username_key on public.profiles (username);
+
 create index if not exists posts_created_at_idx on public.posts (created_at desc);
 create index if not exists comments_post_id_idx on public.comments (post_id, created_at desc);
 
 alter table public.posts enable row level security;
 alter table public.likes enable row level security;
 alter table public.comments enable row level security;
+alter table public.profiles enable row level security;
 
 create policy "posts_select" on public.posts
 for select to authenticated using (true);
@@ -72,6 +82,13 @@ create policy "comments_insert_own" on public.comments
 for insert to authenticated with check (auth.uid() = user_id);
 create policy "comments_delete_own" on public.comments
 for delete to authenticated using (auth.uid() = user_id);
+
+create policy "profiles_select" on public.profiles
+for select to authenticated using (true);
+create policy "profiles_insert_own" on public.profiles
+for insert to authenticated with check (auth.uid() = user_id);
+create policy "profiles_update_own" on public.profiles
+for update to authenticated using (auth.uid() = user_id);
 ```
 
 ### 1.4 Lấy keys

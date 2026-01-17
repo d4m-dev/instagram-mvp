@@ -12,6 +12,7 @@ export default function Feed() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [uid, setUid] = useState(null);
+  const [nameById, setNameById] = useState(new Map());
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUid(data.user?.id || null));
@@ -60,6 +61,28 @@ export default function Feed() {
         commentsByPost.set(c.post_id, arr);
       }
 
+      const userIdSet = new Set();
+      for (const p of posts || []) userIdSet.add(p.user_id);
+      for (const c of comments || []) userIdSet.add(c.user_id);
+
+      const userIds = Array.from(userIdSet);
+      let displayNameMap = new Map();
+      if (userIds.length) {
+        const { data: profiles, error: e4 } = await supabase
+          .from("profiles")
+          .select("user_id,display_name,username")
+          .in("user_id", userIds);
+        if (e4) throw e4;
+        for (const p of profiles || []) {
+          if (p.display_name || p.username) {
+            displayNameMap.set(p.user_id, {
+              display_name: p.display_name || "",
+              username: p.username || ""
+            });
+          }
+        }
+      }
+
       const merged = await Promise.all(
         (posts || []).map(async (p) => {
           const imageUrl = await getPublicUrl(p.image_path);
@@ -74,6 +97,7 @@ export default function Feed() {
         })
       );
 
+      setNameById(displayNameMap);
       setItems(merged);
     } catch (e) {
       setErr(e?.message || "Tải bảng tin thất bại");
@@ -97,7 +121,7 @@ export default function Feed() {
       {empty && <div className="card">Chưa có bài nào.</div>}
 
       {items.map((p) => (
-        <PostCard key={p.id} post={p} onChanged={load} />
+        <PostCard key={p.id} post={p} onChanged={load} nameById={nameById} />
       ))}
     </div>
   );

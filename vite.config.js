@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 const repoName = process.env.VITE_REPO_NAME || "instagram-mvp";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: `/${repoName}/`
-});
+  base: command === "serve" ? "/" : `/${repoName}/`
+}));

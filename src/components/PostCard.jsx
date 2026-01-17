@@ -6,9 +6,16 @@ function shortId(id) {
   return id.slice(0, 6);
 }
 
-export default function PostCard({ post, onChanged }) {
+export default function PostCard({ post, onChanged, nameById }) {
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+
+  function displayNameFor(userId) {
+    const info = nameById?.get?.(userId);
+    if (info?.username) return `@${info.username}`;
+    if (info?.display_name) return info.display_name;
+    return `user-${shortId(userId)}`;
+  }
 
   const createdLabel = useMemo(() => {
     try { return new Date(post.created_at).toLocaleString(); } catch { return ""; }
@@ -72,7 +79,7 @@ export default function PostCard({ post, onChanged }) {
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div>
-          <strong>user-{shortId(post.user_id)}</strong>
+          <strong>{displayNameFor(post.user_id)}</strong>
           <div className="muted small">{createdLabel}</div>
         </div>
         <button className="btn2" onClick={toggleLike} disabled={busy}>
@@ -85,7 +92,7 @@ export default function PostCard({ post, onChanged }) {
 
       <div className="spacer" />
       {post.caption && (
-        <div className="small"><span className="muted">user-{shortId(post.user_id)}</span> {post.caption}</div>
+        <div className="small"><span className="muted">{displayNameFor(post.user_id)}</span> {post.caption}</div>
       )}
 
       <div className="spacer" />
@@ -106,7 +113,7 @@ export default function PostCard({ post, onChanged }) {
       <div className="grid">
         {(post.comments || []).map((c) => (
           <div key={c.id} className="small">
-            <strong>user-{shortId(c.user_id)}</strong> <span className="muted">{c.text}</span>
+            <strong>{displayNameFor(c.user_id)}</strong> <span className="muted">{c.text}</span>
           </div>
         ))}
       </div>

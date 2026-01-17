@@ -4,10 +4,13 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Feed from "./pages/Feed.jsx";
 import Upload from "./pages/Upload.jsx";
+import User from "./pages/User.jsx";
 
 export default function App() {
-  const [route, setRoute] = useState("feed"); // feed | upload | login | register
+  const [route, setRoute] = useState("feed"); // feed | upload | login | register | user
   const [session, setSession] = useState(null);
+  const [displayName, setDisplayName] = useState("");
+  const [publicId, setPublicId] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -26,10 +29,37 @@ export default function App() {
   const userEmail = useMemo(() => session?.user?.email || null, [session]);
   const isAuthed = !!session?.user;
 
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid) {
+      setDisplayName("");
+      setPublicId("");
+      return;
+    }
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name,username")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (error) {
+        console.error(error);
+        return;
+      }
+      const name = data?.display_name || "";
+      const uname = data?.username || "";
+      setDisplayName(name);
+      setPublicId(uname);
+    })();
+  }, [session]);
+
   async function logout() {
     await supabase.auth.signOut();
     setRoute("login");
   }
+
+  const topbarLabel = publicId ? `@${publicId}` : (displayName || userEmail || "");
 
   return (
     <>
@@ -40,7 +70,8 @@ export default function App() {
           <div className="row">
             {isAuthed ? (
               <>
-                <span className="muted">{userEmail}</span>
+                <span className="muted">{topbarLabel}</span>
+                <button className="btn2" onClick={() => setRoute("user")}>Hồ sơ</button>
                 <button className="btn2" onClick={() => setRoute("upload")}>Tải lên</button>
                 <button className="btn2" onClick={logout}>Đăng xuất</button>
               </>
@@ -59,7 +90,9 @@ export default function App() {
         {!isAuthed && route === "register" && <Register onAuthed={() => setRoute("feed")} onGoLogin={() => setRoute("login")} />}
 
         {isAuthed && route === "upload" && <Upload onDone={() => setRoute("feed")} />}
+        {isAuthed && route === "user" && <User />}
         {isAuthed && route === "feed" && <Feed />}
+
 
         {!isAuthed && route === "feed" && (
           <div className="card">
