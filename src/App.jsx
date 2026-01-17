@@ -12,6 +12,7 @@ export default function App() {
   const [displayName, setDisplayName] = useState("");
   const [publicId, setPublicId] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [recentPosts, setRecentPosts] = useState([]);
   const hasSupabase = !!supabase;
 
   const defaultAvatar = "https://raw.githubusercontent.com/d4m-dev/media/main/avatar/default-avatar.png";
@@ -36,6 +37,13 @@ export default function App() {
   const isAuthed = !!session?.user;
 
   useEffect(() => {
+    if (isAuthed) return;
+    if (route !== "feed") return;
+    const timer = setTimeout(() => setRoute("login"), 3000);
+    return () => clearTimeout(timer);
+  }, [isAuthed, route]);
+
+  useEffect(() => {
     if (!hasSupabase) return;
 
     const uid = session?.user?.id;
@@ -43,6 +51,7 @@ export default function App() {
       setDisplayName("");
       setPublicId("");
       setAvatarUrl("");
+      setRecentPosts([]);
       return;
     }
 
@@ -62,6 +71,22 @@ export default function App() {
       setDisplayName(name);
       setPublicId(uname);
       setAvatarUrl(avUrl || defaultAvatar);
+
+      const { data: posts, error: pe } = await supabase
+        .from("posts")
+        .select("id,image_path,created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(12);
+      if (pe) {
+        console.error(pe);
+        return;
+      }
+      const withUrls = (posts || []).map((p) => {
+        const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(p.image_path);
+        return { ...p, imageUrl: urlData.publicUrl };
+      });
+      setRecentPosts(withUrls);
     })();
   }, [hasSupabase, session]);
 
@@ -98,9 +123,12 @@ export default function App() {
             {isAuthed && route === "feed" && <Feed />}
 
             {!isAuthed && route === "feed" && (
-              <div className="card">
-                <div>Bạn chưa đăng nhập.</div>
-                <div className="spacer" />
+              <div className="card auth-redirect">
+                <div className="auth-redirect-title">Bạn chưa đăng nhập</div>
+                <div className="muted">Đang chuyển hướng đến trang đăng nhập...</div>
+                <div className="auth-redirect-progress" aria-hidden="true">
+                  <span />
+                </div>
                 <button className="btn" onClick={() => setRoute("login")}>Đi tới đăng nhập</button>
               </div>
             )}
@@ -119,12 +147,13 @@ export default function App() {
               </div>
 
               <div className="spacer" />
-              <div className="section-title">Trang cá nhân</div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                {displayName || userEmail || "Tài khoản"}
-              </div>
-              <div className="muted" style={{ marginTop: 4 }}>
-                {publicId ? `@${publicId}` : "Chưa đặt mã người dùng"}
+              <div className="section-title">Bài viết mới</div>
+              <div className="side-posts-grid">
+                {recentPosts.map((p) => (
+                  <div key={p.id} className="side-post">
+                    <img src={p.imageUrl} alt="post" />
+                  </div>
+                ))}
               </div>
 
               <div className="spacer" />

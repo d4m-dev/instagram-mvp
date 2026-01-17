@@ -178,6 +178,25 @@ input, button, textarea { font: inherit; }
 
 .side-card { position: sticky; top: 78px; }
 .side-card .muted { font-size: 12px; }
+.side-posts-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+	margin-top: 8px;
+}
+.side-post {
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+	background: #fff;
+}
+.side-post img {
+	width: 100%;
+	height: 100%;
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+	display: block;
+}
 
 .bottom-nav {
 	position: fixed;
@@ -276,7 +295,7 @@ input, button, textarea { font: inherit; }
 
 @media (max-width: 980px) {
 	.app-layout { grid-template-columns: minmax(0, 1fr); }
-	.side-card { position: static; }
+	.side-card { display: none; }
 	.subnav { justify-content: space-between; flex-wrap: wrap; }
 }
 

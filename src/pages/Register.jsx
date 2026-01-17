@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { supabase } from "../supabase.js";
+import "../auth.css";
 
 export default function Register({ onAuthed, onGoLogin }) {
   const [fullName, setFullName] = useState("");
@@ -69,20 +70,73 @@ export default function Register({ onAuthed, onGoLogin }) {
   }
 
   return (
-    <div className="card">
-      <h2 className="page-title">Đăng ký</h2>
-      <form className="grid" onSubmit={submit}>
-        <input className="input" placeholder="Họ và tên" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        <input className="input" placeholder="Mã người dùng (vd: nguyenvana)" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input className="input" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="input" placeholder="Mật khẩu (>=6 ký tự)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <input className="input" placeholder="Nhập lại mật khẩu" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-        {err && <div style={{ color: "#ff7b7b" }}>{err}</div>}
-        {ok && <div style={{ color: "#7bffb0" }}>{ok}</div>}
-        <button className="btn" disabled={loading}>{loading ? "..." : "Tạo tài khoản"}</button>
-      </form>
-      <div className="spacer" />
-      <button className="btn-text" onClick={onGoLogin}>Đã có tài khoản? Đăng nhập</button>
+    <div className="ig-page">
+      <div className="ig-shell">
+        <div className="ig-left">
+          <div className="ig-phone ig-float">
+            <div className="ig-phone-notch" />
+            <div className="ig-storybar">
+              <div className="ig-story" />
+              <div className="ig-story" />
+              <div className="ig-story" />
+              <div className="ig-story" />
+            </div>
+            <div className="ig-feed">
+              <div className="ig-post">
+                <div className="ig-post-head">
+                  <div className="ig-avatar" />
+                  <div className="ig-lines">
+                    <div className="ig-line w1" />
+                    <div className="ig-line w2" />
+                  </div>
+                </div>
+                <div className="ig-post-media" />
+                <div className="ig-post-actions">
+                  <span className="dot" />
+                  <span className="dot" />
+                  <span className="dot" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="ig-right">
+          <div className="ig-card ig-card-hero">
+            <div className="ig-logo"><span>Instagram</span></div>
+            <p className="ig-title">Tạo tài khoản mới trong vài bước.</p>
+            <form className="ig-form" onSubmit={submit}>
+              <div className="ig-field">
+                <label htmlFor="fullName">Họ và tên</label>
+                <input id="fullName" placeholder="Họ và tên" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              </div>
+              <div className="ig-field">
+                <label htmlFor="username">Mã người dùng</label>
+                <input id="username" placeholder="Mã người dùng (vd: nguyenvana)" value={username} onChange={(e) => setUsername(e.target.value)} />
+              </div>
+              <div className="ig-field">
+                <label htmlFor="email">Email</label>
+                <input id="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="ig-field">
+                <label htmlFor="password">Mật khẩu</label>
+                <input id="password" placeholder="Mật khẩu (>=6 ký tự)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+              <div className="ig-field">
+                <label htmlFor="confirmPassword">Nhập lại mật khẩu</label>
+                <input id="confirmPassword" placeholder="Nhập lại mật khẩu" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              </div>
+              {err && <div className="ig-alert ig-alert-error">{err}</div>}
+              {ok && <div className="ig-alert ig-alert-ok">{ok}</div>}
+              <button className="ig-btn" disabled={loading}>{loading ? "..." : "Tạo tài khoản"}</button>
+            </form>
+          </div>
+          <div className="ig-card ig-card-mini">
+            <span>Đã có tài khoản? </span>
+            <button className="ig-linkbtn" onClick={onGoLogin}>Đăng nhập</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
