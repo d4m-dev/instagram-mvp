@@ -11,8 +11,11 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [displayName, setDisplayName] = useState("");
   const [publicId, setPublicId] = useState("");
+  const hasSupabase = !!supabase;
 
   useEffect(() => {
+    if (!hasSupabase) return;
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session || null);
     });
@@ -24,12 +27,14 @@ export default function App() {
     return () => {
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [hasSupabase]);
 
   const userEmail = useMemo(() => session?.user?.email || null, [session]);
   const isAuthed = !!session?.user;
 
   useEffect(() => {
+    if (!hasSupabase) return;
+
     const uid = session?.user?.id;
     if (!uid) {
       setDisplayName("");
@@ -52,14 +57,29 @@ export default function App() {
       setDisplayName(name);
       setPublicId(uname);
     })();
-  }, [session]);
+  }, [hasSupabase, session]);
 
   async function logout() {
+    if (!hasSupabase) return;
     await supabase.auth.signOut();
     setRoute("login");
   }
 
   const topbarLabel = publicId ? `@${publicId}` : (displayName || userEmail || "");
+
+  if (!hasSupabase) {
+    return (
+      <div className="container" style={{ paddingTop: 32 }}>
+        <div className="card">
+          <strong>Thiếu cấu hình Supabase.</strong>
+          <div className="spacer" />
+          <div>
+            Cần đặt biến môi trường <code>VITE_SUPABASE_URL</code> và <code>VITE_SUPABASE_ANON_KEY</code> trên GitHub Pages.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
