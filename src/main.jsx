@@ -3,6 +3,10 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./styles.css";
 
+if (typeof window !== "undefined") {
+  window.__APP_BOOTSTRAPPED__ = true;
+}
+
 function formatError(err) {
   if (!err) return "";
   if (err instanceof Error) return `${err.name}: ${err.message}`;

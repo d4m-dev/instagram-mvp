@@ -5,4 +5,7 @@ export default defineConfig({
   plugins: [react()],
   // GitHub Pages của repo luôn là /<repo>/
   base: "/instagram-mvp/",
+  build: {
+    manifest: "manifest.json",
+  },
 })
