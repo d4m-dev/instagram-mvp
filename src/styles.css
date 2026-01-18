@@ -90,6 +90,7 @@ input, button, textarea { font: inherit; }
 	font-weight: 600;
 }
 .btn2:hover { background: var(--surface); }
+.btn2.active { background: var(--surface); }
 .btn2.active { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(59,130,246,.2); }
 .btn-text { border: 0; background: transparent; color: var(--blue-dark); padding: 0; font-weight: 700; cursor: pointer; }
 .link-btn {
@@ -118,8 +119,20 @@ input, button, textarea { font: inherit; }
 	box-sizing: border-box;
 	outline: none;
 }
+.input::placeholder, .textarea::placeholder { color: var(--muted); }
 .input:focus, .textarea:focus { border-color: var(--blue); background: var(--input-bg-focus); }
 .textarea { min-height: 90px; resize: vertical; }
+
+.input[type="file"] { background: var(--surface); }
+.input[type="file"]::file-selector-button {
+	border: 1px solid var(--border);
+	background: var(--card);
+	color: var(--text);
+	padding: 6px 10px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+.input[type="file"]::file-selector-button:hover { background: var(--surface); }
 
 .topbar {
 	position: sticky;
@@ -158,6 +171,7 @@ input, button, textarea { font: inherit; }
 	display: grid;
 	place-items: center;
 }
+.icon-btn:hover { background: var(--surface); }
 .icon-btn.active { border-color: #b5b5b5; background: var(--surface); }
 .search-btn { width: 40px; height: 40px; display: grid; place-items: center; }
 .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -361,6 +375,7 @@ input, button, textarea { font: inherit; }
 .icon-pill.danger { background: var(--danger-bg); color: #dc2626; }
 .icon-pill:disabled { opacity: .6; cursor: not-allowed; }
 .pill { padding: 4px 8px; border-radius: 999px; background: var(--pill-bg); color: var(--text); font-size: 12px; }
+.pill { border: 1px solid var(--border); }
 
 .page-title { margin: 0; font-size: 20px; }
 .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 6px 0 2px; }
@@ -471,7 +486,7 @@ input, button, textarea { font: inherit; }
 .chat-bubble {
 	padding: 10px 12px;
 	border-radius: 16px;
-	background: var(--card);
+	background: var(--surface);
 	border: 1px solid var(--border);
 	max-width: min(72%, 420px);
 	width: fit-content;
@@ -485,6 +500,11 @@ input, button, textarea { font: inherit; }
 	align-self: flex-end;
 	background: var(--bubble-me);
 	border-color: var(--bubble-me-border);
+}
+.chat-bubble.media-only {
+	background: transparent;
+	border: 0;
+	padding: 0;
 }
 .chat-delete {
 	position: absolute;
@@ -547,7 +567,7 @@ input, button, textarea { font: inherit; }
 .chat-media {
 	max-width: 240px;
 	border-radius: 12px;
-	border: 1px solid var(--border);
+	border: 0;
 	display: block;
 	margin-bottom: 6px;
 	max-height: 240px;

@@ -408,8 +408,13 @@ export default function Messages({ targetUserId }) {
             {loading && <div className="muted">Đang tải...</div>}
             {err && <div style={{ color: "#ff7b7b" }}>{err}</div>}
             <div className="chat-body">
-              {messages.map((m) => (
-                <div key={m.id} className={`chat-bubble ${m.sender_id === currentUserId ? "me" : ""}`}>
+              {messages.map((m) => {
+                const isMediaOnly = !m.is_recalled && (m.image_url || m.sticker_url) && !m.text;
+                return (
+                <div
+                  key={m.id}
+                  className={`chat-bubble ${m.sender_id === currentUserId ? "me" : ""} ${isMediaOnly ? "media-only" : ""}`}
+                >
                   {m.is_recalled ? (
                     <span className="muted">Tin nhắn đã thu hồi</span>
                   ) : (
@@ -430,7 +435,8 @@ export default function Messages({ targetUserId }) {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
             <div className="chat-input">
               <button className="icon-btn" onClick={() => fileInputRef.current?.click()} aria-label="Gửi ảnh">
@@ -473,8 +479,13 @@ export default function Messages({ targetUserId }) {
             </div>
           </div>
           <div className="chat-popup-body">
-            {messages.map((m) => (
-              <div key={m.id} className={`chat-bubble ${m.sender_id === currentUserId ? "me" : ""}`}>
+            {messages.map((m) => {
+              const isMediaOnly = !m.is_recalled && (m.image_url || m.sticker_url) && !m.text;
+              return (
+              <div
+                key={m.id}
+                className={`chat-bubble ${m.sender_id === currentUserId ? "me" : ""} ${isMediaOnly ? "media-only" : ""}`}
+              >
                 {m.is_recalled ? (
                   <span className="muted">Tin nhắn đã thu hồi</span>
                 ) : (
@@ -495,7 +506,8 @@ export default function Messages({ targetUserId }) {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
           <div className="chat-input">
             <button className="icon-btn" onClick={() => fileInputRef.current?.click()} aria-label="Gửi ảnh">
