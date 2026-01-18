@@ -5,18 +5,38 @@ import Register from "./pages/Register.jsx";
 import Feed from "./pages/Feed.jsx";
 import Upload from "./pages/Upload.jsx";
 import User from "./pages/User.jsx";
+import Search from "./pages/Search.jsx";
+import Explore from "./pages/Explore.jsx";
+import Notifications from "./pages/Notifications.jsx";
+import Messages from "./pages/Messages.jsx";
 
 export default function App() {
-  const [route, setRoute] = useState("feed"); // feed | upload | login | register | user
+  const [route, setRoute] = useState("feed"); // feed | upload | login | register | user | search | explore | notifications | messages
   const [session, setSession] = useState(null);
   const [displayName, setDisplayName] = useState("");
   const [publicId, setPublicId] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [recentPosts, setRecentPosts] = useState([]);
   const [profileUserId, setProfileUserId] = useState(null);
+  const [chatUserId, setChatUserId] = useState(null);
+  const [openPostId, setOpenPostId] = useState(null);
+  const [theme, setTheme] = useState("light");
   const hasSupabase = !!supabase;
 
   const defaultAvatar = "https://raw.githubusercontent.com/d4m-dev/media/main/avatar/default-avatar.png";
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") || "light";
+    setTheme(stored);
+    document.documentElement.dataset.theme = stored;
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    document.documentElement.dataset.theme = next;
+  }
 
   function parseImagePaths(value) {
     if (!value) return [];
@@ -128,11 +148,42 @@ export default function App() {
     setRoute("user");
   }
 
+  function openChat(userId) {
+    if (!userId) return;
+    setChatUserId(userId);
+    setRoute("messages");
+  }
+
+  function openPost(postId) {
+    if (!postId) return;
+    setOpenPostId(postId);
+    setRoute("feed");
+  }
+
   return (
     <>
       <div className="topbar">
         <div className="nav">
           <strong className="brand" style={{ cursor: "pointer" }} onClick={() => setRoute("feed")}>Instagram MVP</strong>
+          <button className="icon-btn" onClick={toggleTheme} aria-label="Đổi giao diện">
+            {theme === "dark" ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 14.5A9 9 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v3" />
+                <path d="M12 19v3" />
+                <path d="M4.2 4.2l2.1 2.1" />
+                <path d="M17.7 17.7l2.1 2.1" />
+                <path d="M2 12h3" />
+                <path d="M19 12h3" />
+                <path d="M4.2 19.8l2.1-2.1" />
+                <path d="M17.7 6.3l2.1-2.1" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
@@ -143,8 +194,20 @@ export default function App() {
             {!isAuthed && route === "register" && <Register onAuthed={() => setRoute("feed")} onGoLogin={() => setRoute("login")} />}
 
             {isAuthed && route === "upload" && <Upload onDone={() => setRoute("feed")} />}
-            {isAuthed && route === "user" && <User userId={profileUserId} />}
-            {isAuthed && route === "feed" && <Feed onOpenProfile={openProfile} />}
+            {isAuthed && route === "user" && <User userId={profileUserId} onOpenChat={openChat} />}
+            {isAuthed && route === "feed" && (
+              <Feed
+                onOpenProfile={openProfile}
+                openPostId={openPostId}
+                onOpenPostHandled={() => setOpenPostId(null)}
+              />
+            )}
+            {isAuthed && route === "search" && <Search onOpenProfile={openProfile} />}
+            {isAuthed && route === "explore" && <Explore />}
+            {isAuthed && route === "notifications" && (
+              <Notifications onOpenProfile={openProfile} onOpenPost={openPost} />
+            )}
+            {isAuthed && route === "messages" && <Messages targetUserId={chatUserId} />}
 
             {!isAuthed && route === "feed" && (
               <div className="card auth-redirect">
@@ -204,10 +267,26 @@ export default function App() {
               <path d="M5 12h14" />
             </svg>
           </button>
-          <button className="nav-btn" aria-label="Tìm kiếm">
+          <button className={`nav-btn ${route === "search" ? "active" : ""}`} aria-label="Tìm kiếm" onClick={() => setRoute("search")}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
               <path d="M20 20l-3.5-3.5" />
+            </svg>
+          </button>
+          <button className={`nav-btn ${route === "explore" ? "active" : ""}`} aria-label="Khám phá" onClick={() => setRoute("explore")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z" />
+            </svg>
+          </button>
+          <button className={`nav-btn ${route === "notifications" ? "active" : ""}`} aria-label="Thông báo" onClick={() => setRoute("notifications")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3a5 5 0 0 1 5 5v3l2 3H5l2-3V8a5 5 0 0 1 5-5z" />
+              <path d="M9 19a3 3 0 0 0 6 0" />
+            </svg>
+          </button>
+          <button className={`nav-btn ${route === "messages" ? "active" : ""}`} aria-label="Tin nhắn" onClick={() => setRoute("messages")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16v10H7l-3 3V5z" />
             </svg>
           </button>
           <button className={`nav-btn ${route === "user" ? "active" : ""}`} onClick={() => openProfile(null)} aria-label="Hồ sơ">
