@@ -8,6 +8,34 @@
   --blue2:#1877f2;
   --purple:#7c3aed;
   --pink:#ec4899;
+  --input-bg:#f9fafb;
+  --input-bg-focus:#fff;
+  --ghost-bg:#fff;
+  --ghost-border:#e5e7eb;
+  --alert-error-bg:#fef2f2;
+  --alert-error-border:#fecaca;
+  --alert-ok-bg:#ecfdf5;
+  --alert-ok-border:#bbf7d0;
+}
+
+[data-theme="dark"]{
+  --bg:#0b0f1a;
+  --card:#121827;
+  --border:#1f2937;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --blue:#3b82f6;
+  --blue2:#60a5fa;
+  --purple:#8b5cf6;
+  --pink:#f472b6;
+  --input-bg:#0f172a;
+  --input-bg-focus:#111827;
+  --ghost-bg:#0f172a;
+  --ghost-border:#1f2937;
+  --alert-error-bg:#3f1d1d;
+  --alert-error-border:#7f1d1d;
+  --alert-ok-bg:#064e3b;
+  --alert-ok-border:#065f46;
 }
 
 *{box-sizing:border-box}
@@ -141,7 +169,7 @@ body{
 .ig-card{
   width:min(360px, 100%);
   background:var(--card);
-  border:1px solid rgba(255,255,255,.8);
+  border:1px solid var(--border);
   border-radius: 18px;
   padding:24px 28px;
   box-shadow: 0 20px 60px rgba(15,23,42,.08);
@@ -190,8 +218,8 @@ body{
 .ig-field input{
   width:100%;
   padding:12px 12px;
-  border:1px solid #e5e7eb;
-  background:#f9fafb;
+  border:1px solid var(--border);
+  background:var(--input-bg);
   border-radius: 12px;
   outline:none;
   font-size:13px;
@@ -199,7 +227,7 @@ body{
 }
 .ig-field input:focus{
   border-color: rgba(24,119,242,.6);
-  background:#fff;
+  background:var(--input-bg-focus);
   box-shadow: 0 0 0 4px rgba(24,119,242,.12);
 }
 
@@ -218,9 +246,9 @@ body{
 .ig-btn:hover{ box-shadow: 0 10px 24px rgba(24,119,242,.25); }
 .ig-btn:active{transform:translateY(1px)}
 .ig-btn-ghost{
-  background: #fff;
+  background: var(--ghost-bg);
   color: var(--blue2);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ghost-border);
 }
 
 .ig-divider{
@@ -260,13 +288,13 @@ body{
 }
 .ig-alert-error{
   color:#b91c1c;
-  background:#fef2f2;
-  border-color:#fecaca;
+  background:var(--alert-error-bg);
+  border-color:var(--alert-error-border);
 }
 .ig-alert-ok{
   color:#166534;
-  background:#ecfdf5;
-  border-color:#bbf7d0;
+  background:var(--alert-ok-bg);
+  border-color:var(--alert-ok-border);
 }
 
 .ig-footer{
